@@ -18,7 +18,7 @@ func (s *Service) Get(ctx context.Context, code string) (*napkin.Napkin, error) 
 		if !errors.Is(err, repository.ErrNotFound) {
 			return nil, fmt.Errorf("service.Get: error getting napkin by code: %w", err)
 		}
-		return nil, err
+		return nil, napkin.ErrNapkinDoesNotExist
 	}
 	return npk, nil
 }

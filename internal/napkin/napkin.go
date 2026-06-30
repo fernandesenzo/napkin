@@ -11,6 +11,7 @@ type Napkin struct {
 }
 
 const CodeLength = 6
+const MaxContentLength = 200
 const DefaultTTL = time.Hour * 24
 
 func ValidateCode(code string) error {
@@ -20,5 +21,13 @@ func ValidateCode(code string) error {
 	}
 	return nil
 }
+func ValidateContent(content string) error {
+	if len(content) > MaxContentLength {
+		return ErrContentTooLong
+	}
+	return nil
+}
 
 var ErrInvalidCode = errors.New("Invalid code")
+var ErrNapkinDoesNotExist = errors.New("no napkin with such code")
+var ErrContentTooLong = errors.New("napkin exceeded maximum length")
