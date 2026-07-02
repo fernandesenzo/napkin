@@ -37,7 +37,7 @@ func TestGet(t *testing.T) {
 			code:        "abcdef",
 			repoNapkin:  nil,
 			repoErr:     repository.ErrNotFound,
-			expectedErr: repository.ErrNotFound,
+			expectedErr: napkin.ErrNapkinDoesNotExist,
 		},
 		{
 			name:        "repository error",
