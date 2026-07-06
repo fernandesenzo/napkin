@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 
+	"github.com/fernandesenzo/napkin/internal/hub"
 	"github.com/fernandesenzo/napkin/internal/napkin"
 )
 
@@ -12,10 +13,15 @@ type Service interface {
 	Get(ctx context.Context, code string) (*napkin.Napkin, error)
 }
 
-type Handler struct {
-	svc Service
+type RoomManager interface {
+	GetOrCreateRoom(code string) *hub.Hub
 }
 
-func NewHandler(svc Service) *Handler {
-	return &Handler{svc: svc}
+type Handler struct {
+	svc        Service
+	hubManager RoomManager
+}
+
+func NewHandler(svc Service, manager RoomManager) *Handler {
+	return &Handler{svc: svc, hubManager: manager}
 }

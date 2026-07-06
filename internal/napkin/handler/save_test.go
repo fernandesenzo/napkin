@@ -53,9 +53,9 @@ func TestSave(t *testing.T) {
 			expectedBody:   "invalid request",
 		},
 		{
-			name:           "invalid code length",
-			contentType:    "application/json",
-			body:           `{"code":"abc","content":"some text"}`,
+			name:        "invalid code length",
+			contentType: "application/json",
+			body:        `{"code":"abc","content":"some text"}`,
 			saveFn: func(ctx context.Context, code string, content string) (*napkin.Napkin, error) {
 				return nil, napkin.ErrInvalidCode
 			},
@@ -63,9 +63,9 @@ func TestSave(t *testing.T) {
 			expectedBody:   "invalid code",
 		},
 		{
-			name:           "content too long",
-			contentType:    "application/json",
-			body:           `{"code":"abcdef","content":"` + strings.Repeat("a", 201) + `"}`,
+			name:        "content too long",
+			contentType: "application/json",
+			body:        `{"code":"abcdef","content":"` + strings.Repeat("a", 201) + `"}`,
 			saveFn: func(ctx context.Context, code string, content string) (*napkin.Napkin, error) {
 				return nil, napkin.ErrContentTooLong
 			},
@@ -89,7 +89,7 @@ func TestSave(t *testing.T) {
 			svc := &mockService{
 				saveFn: tt.saveFn,
 			}
-			h := NewHandler(svc)
+			h := NewHandler(svc, nil)
 
 			req := httptest.NewRequest(http.MethodPost, "/napkin", strings.NewReader(tt.body))
 			if tt.contentType != "" {
