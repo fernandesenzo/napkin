@@ -45,7 +45,7 @@ func TestSave(t *testing.T) {
 			mock := &mockRepository{
 				saveErr: tt.repoErr,
 			}
-			svc := NewService(mock)
+			svc := New(mock)
 
 			got, err := svc.Save(context.Background(), tt.code, tt.content)
 

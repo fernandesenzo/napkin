@@ -32,7 +32,7 @@ func TestIncrementIPCounter(t *testing.T) {
 			mock := &mockRepository{
 				incrementIPErr: tt.repoErr,
 			}
-			svc := NewService(mock)
+			svc := New(mock)
 
 			err := svc.IncrementIPCounter(context.Background(), tt.ip)
 

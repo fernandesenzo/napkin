@@ -9,6 +9,8 @@ require (
 
 require github.com/google/uuid v1.6.0
 
+require github.com/joho/godotenv v1.5.1 // indirect
+
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/gorilla/websocket v1.5.3

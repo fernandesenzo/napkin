@@ -20,9 +20,8 @@ func (m *mockSvc) Save(ctx context.Context, code, content string) (*napkin.Napki
 	return nil, nil
 }
 
-// newTestHub returns a Hub backed by a no-op service.
 func newTestHub() *Hub {
-	return NewHub("test01", &mockSvc{})
+	return New("test01", &mockSvc{})
 }
 
 func TestHub_RegisterClient(t *testing.T) {
@@ -64,8 +63,6 @@ func TestHub_UnregisterLastClientCallsOnEmpty(t *testing.T) {
 	h.register <- c
 
 	h.unregister <- c
-
-	// Wait for the hub goroutine to finish
 	h.WaitDone()
 
 	mu.Lock()
@@ -107,10 +104,7 @@ func TestHub_UnregisterUnknownClientIsNoop(t *testing.T) {
 
 	h.register <- c1
 
-	// Unregistering c2 (not in the hub) should be a no-op.
 	h.unregister <- c2
-
-	// c1 should still receive broadcasts.
 	h.broadcast <- "still alive"
 	got := <-c1.Send
 	if got != "still alive" {

@@ -89,7 +89,7 @@ func TestSave(t *testing.T) {
 			svc := &mockService{
 				saveFn: tt.saveFn,
 			}
-			h := NewHandler(svc, nil)
+			h := New(svc, nil)
 
 			req := httptest.NewRequest(http.MethodPost, "/napkin", strings.NewReader(tt.body))
 			if tt.contentType != "" {

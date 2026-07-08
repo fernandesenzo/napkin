@@ -22,6 +22,6 @@ type Handler struct {
 	hubManager RoomManager
 }
 
-func NewHandler(svc Service, manager RoomManager) *Handler {
+func New(svc Service, manager RoomManager) *Handler {
 	return &Handler{svc: svc, hubManager: manager}
 }

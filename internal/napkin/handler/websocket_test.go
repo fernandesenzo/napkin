@@ -36,7 +36,7 @@ func dialWebSocket(t *testing.T, srv *httptest.Server, path string) (*websocket.
 }
 
 func TestWebSocket_MissingCode(t *testing.T) {
-	h := NewHandler(&mockService{}, nil)
+	h := New(&mockService{}, nil)
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h.WebSocket(w, r)
@@ -66,7 +66,7 @@ func TestWebSocket_InvalidCode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := NewHandler(&mockService{}, nil)
+			h := New(&mockService{}, nil)
 
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				r.SetPathValue("code", tt.code)
@@ -91,8 +91,8 @@ func TestWebSocket_JoinsRoom(t *testing.T) {
 	svc := &mockService{}
 
 	// Use a real Manager backed by a no-op service so Join works end-to-end.
-	manager := manager.NewManager(svc)
-	h := NewHandler(svc, manager)
+	manager := manager.New(svc)
+	h := New(svc, manager)
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.SetPathValue("code", "abcdef")
@@ -114,8 +114,8 @@ func TestWebSocket_JoinsRoom(t *testing.T) {
 
 func TestWebSocket_MultipleClientsInSameRoom(t *testing.T) {
 	svc := &mockService{}
-	manager := manager.NewManager(svc)
-	h := NewHandler(svc, manager)
+	manager := manager.New(svc)
+	h := New(svc, manager)
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.SetPathValue("code", "abcdef")

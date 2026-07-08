@@ -1,18 +1,23 @@
 package manager
 
 import (
+	"context"
 	"sync"
 
 	"github.com/fernandesenzo/napkin/internal/hub"
+	"github.com/fernandesenzo/napkin/internal/napkin"
 )
 
+type Service interface {
+	Save(ctx context.Context, code string, content string) (*napkin.Napkin, error)
+}
 type Manager struct {
 	mu    sync.Mutex
 	rooms map[string]*hub.Hub
-	svc   hub.Service
+	svc   Service
 }
 
-func NewManager(svc hub.Service) *Manager {
+func New(svc hub.Service) *Manager {
 	return &Manager{
 		rooms: make(map[string]*hub.Hub),
 		svc:   svc,
@@ -27,7 +32,7 @@ func (m *Manager) GetOrCreateRoom(code string) *hub.Hub {
 		return h
 	}
 
-	h := hub.NewHub(code, m.svc)
+	h := hub.New(code, m.svc)
 	h.OnEmpty = func() {
 		m.mu.Lock()
 		delete(m.rooms, code)

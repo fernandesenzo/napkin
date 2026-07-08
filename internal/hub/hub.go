@@ -22,7 +22,7 @@ type Hub struct {
 	OnEmpty    func()
 }
 
-func NewHub(code string, svc Service) *Hub {
+func New(code string, svc Service) *Hub {
 	return &Hub{
 		Code:       code,
 		svc:        svc,

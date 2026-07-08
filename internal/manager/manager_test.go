@@ -30,7 +30,7 @@ func TestManager_GetOrCreateRoom(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := NewManager(&mockSvc{})
+			m := New(&mockSvc{})
 			h := m.GetOrCreateRoom(tt.code)
 			if h == nil {
 				t.Fatal("expected a non-nil hub")
@@ -43,7 +43,7 @@ func TestManager_GetOrCreateRoom(t *testing.T) {
 }
 
 func TestManager_GetOrCreateRoom_ReturnsSameHub(t *testing.T) {
-	m := NewManager(&mockSvc{})
+	m := New(&mockSvc{})
 
 	h1 := m.GetOrCreateRoom("aaaaaa")
 	h2 := m.GetOrCreateRoom("aaaaaa")
@@ -54,7 +54,7 @@ func TestManager_GetOrCreateRoom_ReturnsSameHub(t *testing.T) {
 }
 
 func TestManager_GetOrCreateRoom_DifferentCodes(t *testing.T) {
-	m := NewManager(&mockSvc{})
+	m := New(&mockSvc{})
 
 	h1 := m.GetOrCreateRoom("aaaaaa")
 	h2 := m.GetOrCreateRoom("bbbbbb")
@@ -65,7 +65,7 @@ func TestManager_GetOrCreateRoom_DifferentCodes(t *testing.T) {
 }
 
 func TestManager_RoomRemovedAfterEmpty(t *testing.T) {
-	m := NewManager(&mockSvc{})
+	m := New(&mockSvc{})
 
 	h := m.GetOrCreateRoom("aaaaaa")
 

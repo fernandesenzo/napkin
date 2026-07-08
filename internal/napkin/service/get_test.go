@@ -54,7 +54,7 @@ func TestGet(t *testing.T) {
 				getResult: tt.repoNapkin,
 				getErr:    tt.repoErr,
 			}
-			svc := NewService(mock)
+			svc := New(mock)
 
 			got, err := svc.Get(context.Background(), tt.code)
 
