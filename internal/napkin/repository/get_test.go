@@ -17,15 +17,18 @@ func TestGet(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		setup       func()
+		setup       func(t *testing.T)
 		code        string
 		expected    *napkin.Napkin
 		expectedErr error
 	}{
 		{
 			name: "Success",
-			setup: func() {
-				s.Set("napkin:napkin:abc", "some content")
+			setup: func(t *testing.T) {
+				t.Helper()
+				if err := s.Set("napkin:napkin:abc", "some content"); err != nil {
+					t.Fatalf("miniredis Set: %v", err)
+				}
 			},
 			code: "abc",
 			expected: &napkin.Napkin{
@@ -46,7 +49,7 @@ func TestGet(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s.FlushAll()
 			if tt.setup != nil {
-				tt.setup()
+				tt.setup(t)
 			}
 			res, err := repo.Get(context.Background(), tt.code)
 			if tt.expectedErr != nil {

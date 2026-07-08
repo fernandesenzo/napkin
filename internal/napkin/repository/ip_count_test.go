@@ -15,7 +15,7 @@ func TestIPCounter(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		setup         func()
+		setup         func(t *testing.T)
 		ip            string
 		action        string
 		expectedCount int
@@ -37,8 +37,11 @@ func TestIPCounter(t *testing.T) {
 		},
 		{
 			name: "IncrementExisting",
-			setup: func() {
-				s.Set("napking:ip:127.0.0.1", "5")
+			setup: func(t *testing.T) {
+				t.Helper()
+				if err := s.Set("napking:ip:127.0.0.1", "5"); err != nil {
+					t.Fatalf("miniredis Set: %v", err)
+				}
 			},
 			ip:            "127.0.0.1",
 			action:        "increment",
@@ -47,8 +50,11 @@ func TestIPCounter(t *testing.T) {
 		},
 		{
 			name: "GetExisting",
-			setup: func() {
-				s.Set("napking:ip:127.0.0.1", "10")
+			setup: func(t *testing.T) {
+				t.Helper()
+				if err := s.Set("napking:ip:127.0.0.1", "10"); err != nil {
+					t.Fatalf("miniredis Set: %v", err)
+				}
 			},
 			ip:            "127.0.0.1",
 			action:        "get",
@@ -57,8 +63,11 @@ func TestIPCounter(t *testing.T) {
 		},
 		{
 			name: "GetInvalidValue",
-			setup: func() {
-				s.Set("napking:ip:127.0.0.1", "not-an-int")
+			setup: func(t *testing.T) {
+				t.Helper()
+				if err := s.Set("napking:ip:127.0.0.1", "not-an-int"); err != nil {
+					t.Fatalf("miniredis Set: %v", err)
+				}
 			},
 			ip:            "127.0.0.1",
 			action:        "get",
@@ -71,7 +80,7 @@ func TestIPCounter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s.FlushAll()
 			if tt.setup != nil {
-				tt.setup()
+				tt.setup(t)
 			}
 			ctx := context.Background()
 			if tt.action == "get" {
