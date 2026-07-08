@@ -7,7 +7,6 @@ import (
 )
 
 const napkinPrefix = "napkin:napkin:"
-const ipPrefix = "napking:ip:"
 
 var ErrNotFound = errors.New("repository: resource not found")
 

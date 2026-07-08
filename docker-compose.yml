@@ -1,0 +1,22 @@
+services:
+  redis-local:
+    image: redis:7-alpine
+    container_name: napkin-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass pwd
+    volumes:
+      - redis_data:/data
+
+  api:
+    build: .
+    container_name: napkin-api
+    ports:
+      - "${HOST_PORT:-8081}:${SERVER_PORT}"
+    env_file:
+      - .env
+    depends_on:
+      - redis-local
+
+volumes:
+  redis_data:
