@@ -65,7 +65,7 @@ returns the napkin contents as JSON.
 upgrades to a websocket connection. every client in the same room receives messages broadcast by other clients. messages are persisted to redis automatically.
 
 ## business logic
-by default, codes have length 6, content is limited to 200 characters and napkins last for 24 hours. rate limiting is per-ip: 5 POST/min and 100 GET/min. you can change these settings on `internal/napkin/napkin.go` and the `.env` file.
+by default, codes have length 6, content is limited to 200 characters and napkins last for 24 hours. request body is capped at 4 KB. rate limiting is per-ip backed by redis: 5 POST/min and 100 GET/min, shared across all instances. you can change these settings on `internal/napkin/napkin.go` and the `.env` file.
 
 ## tests and linter
 

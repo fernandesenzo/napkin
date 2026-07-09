@@ -83,7 +83,7 @@ func run() error {
 	rlPost := middleware.RateLimit(redisClient, "napkin:rl:post:", rlPostMax, rlWindow)
 
 	mux := http.NewServeMux()
-	mux.Handle("POST /api/save", rlPost(http.HandlerFunc(h.Save)))
+	mux.Handle("POST /api/save", middleware.BodyLimit(4096)(rlPost(http.HandlerFunc(h.Save))))
 	mux.Handle("GET /{code}", rlGet(http.HandlerFunc(h.Get)))
 	mux.Handle("GET /{code}/ws", rlGet(http.HandlerFunc(h.WebSocket)))
 
