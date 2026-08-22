@@ -2,6 +2,7 @@ package napkin
 
 import (
 	"errors"
+	"regexp"
 	"time"
 )
 
@@ -14,9 +15,13 @@ const CodeLength = 6
 const MaxContentLength = 200
 const DefaultTTL = time.Hour * 24
 
+var codePattern = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
+
 func ValidateCode(code string) error {
-	//maybe add some more rules here?
 	if len(code) != CodeLength {
+		return ErrInvalidCode
+	}
+	if !codePattern.MatchString(code) {
 		return ErrInvalidCode
 	}
 	return nil
