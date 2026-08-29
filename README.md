@@ -57,12 +57,27 @@ response:
 ### get a napkin
 `GET /{code}`
 
-returns the napkin contents as JSON.
+returns the napkin contents as json. for example, `GET /abc123`:
+
+```json
+{
+  "code": "abc123",
+  "content": "hello world"
+}
+```
+
+possible status codes: `200` ok, `400` invalid code, `404` napkin not found, `500` internal server error.
+
+note: the `GET` endpoints have no `/api` prefix — the code goes right after the root, unlike `POST /api/save`.
 
 ### real-time collaboration
 `GET /{code}/ws`
 
-upgrades to a websocket connection. every client in the same room receives messages broadcast by other clients. messages are persisted to redis automatically.
+upgrades to a websocket connection. every client in the same room receives the messages broadcast by other clients, including the sender. messages are persisted to redis automatically.
+
+each message is a plain text frame containing the note content. binary frames are ignored. messages over 200 characters are dropped, and each client is rate-limited to 10 messages per second (burst of 20) to prevent spam.
+
+when the last client disconnects, the room is removed from memory. the content stays in redis until it expires.
 
 ## business logic
 by default, codes have length 6, content is limited to 200 characters and napkins last for 24 hours. request body is capped at 4 KB. rate limiting is per-ip backed by redis: 5 POST/min and 100 GET/min, shared across all instances. you can change these settings on `internal/napkin/napkin.go` and the `.env` file.

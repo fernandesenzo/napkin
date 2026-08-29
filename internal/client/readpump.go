@@ -32,12 +32,16 @@ func (c *Client) ReadPump() {
 	})
 
 	for {
-		_, messageBytes, err := c.conn.ReadMessage()
+		messageType, messageBytes, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				slog.Error("client.ReadPump: unexpected websocket closure", "err", err)
 			}
 			break
+		}
+
+		if messageType != websocket.TextMessage {
+			continue
 		}
 
 		message := string(messageBytes)

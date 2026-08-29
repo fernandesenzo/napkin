@@ -28,7 +28,6 @@ func TestReadPump_ValidMessageIsBroadcast(t *testing.T) {
 		t.Errorf("expected broadcast %q, got %q", msg, got)
 	}
 
-	// Trigger cleanup: close client side so ReadPump exits.
 	clientConn.Close()
 	<-done
 
@@ -64,6 +63,36 @@ func TestReadPump_ContentTooLongIsDropped(t *testing.T) {
 	got := <-h.broadcast
 	if got != valid {
 		t.Errorf("expected only valid message %q to be broadcast, got %q", valid, got)
+	}
+
+	clientConn.Close()
+	<-done
+	<-h.unregister
+}
+
+func TestReadPump_BinaryMessageIsDropped(t *testing.T) {
+	h := newStubHub()
+	serverConn, clientConn := dialTestServer(t, nil)
+
+	c := NewClient(h, serverConn)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		c.ReadPump()
+	}()
+
+	if err := clientConn.WriteMessage(websocket.BinaryMessage, []byte("binary data")); err != nil {
+		t.Fatalf("failed to write binary message: %v", err)
+	}
+
+	valid := "valid"
+	if err := clientConn.WriteMessage(websocket.TextMessage, []byte(valid)); err != nil {
+		t.Fatalf("failed to write message: %v", err)
+	}
+
+	got := <-h.broadcast
+	if got != valid {
+		t.Errorf("expected only text message %q to be broadcast, got %q", valid, got)
 	}
 
 	clientConn.Close()
