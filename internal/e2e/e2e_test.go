@@ -33,7 +33,7 @@ func newTestServer(t *testing.T) (string, func()) {
 	rlPost := middleware.RateLimit(client, "napkin:rl:post:", 5, time.Minute)
 
 	mux := http.NewServeMux()
-	mux.Handle("POST /api/save", middleware.BodyLimit(4096)(rlPost(http.HandlerFunc(h.Save))))
+	mux.Handle("POST /save", middleware.BodyLimit(4096)(rlPost(http.HandlerFunc(h.Save))))
 	mux.Handle("GET /{code}", rlGet(http.HandlerFunc(h.Get)))
 	mux.Handle("GET /{code}/ws", rlGet(http.HandlerFunc(h.WebSocket)))
 
@@ -63,7 +63,7 @@ func TestSaveNapkin(t *testing.T) {
 	defer cleanup()
 
 	body := `{"code":"abc123","content":"hello world"}`
-	resp, err := http.Post(addr+"/api/save", "application/json", strings.NewReader(body))
+	resp, err := http.Post(addr+"/save", "application/json", strings.NewReader(body))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -85,7 +85,7 @@ func TestGetNapkin(t *testing.T) {
 	defer cleanup()
 
 	saveBody := `{"code":"xyz789","content":"test content"}`
-	resp, _ := http.Post(addr+"/api/save", "application/json", strings.NewReader(saveBody))
+	resp, _ := http.Post(addr+"/save", "application/json", strings.NewReader(saveBody))
 	resp.Body.Close()
 
 	resp2, err := http.Get(addr + "/xyz789")
@@ -128,7 +128,7 @@ func TestSaveInvalidCode(t *testing.T) {
 	defer cleanup()
 
 	body := `{"code":"ab","content":"hello"}`
-	resp, err := http.Post(addr+"/api/save", "application/json", strings.NewReader(body))
+	resp, err := http.Post(addr+"/save", "application/json", strings.NewReader(body))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -145,7 +145,7 @@ func TestSaveContentTooLong(t *testing.T) {
 
 	longContent := strings.Repeat("a", 201)
 	body := `{"code":"abc123","content":"` + longContent + `"}`
-	resp, err := http.Post(addr+"/api/save", "application/json", strings.NewReader(body))
+	resp, err := http.Post(addr+"/save", "application/json", strings.NewReader(body))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -160,7 +160,7 @@ func TestSaveWrongContentType(t *testing.T) {
 	addr, cleanup := newTestServer(t)
 	defer cleanup()
 
-	resp, err := http.Post(addr+"/api/save", "text/plain", strings.NewReader("hello"))
+	resp, err := http.Post(addr+"/save", "text/plain", strings.NewReader("hello"))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -176,11 +176,11 @@ func TestOverwriteNapkin(t *testing.T) {
 	defer cleanup()
 
 	firstBody := `{"code":"ovr123","content":"original"}`
-	resp, _ := http.Post(addr+"/api/save", "application/json", strings.NewReader(firstBody))
+	resp, _ := http.Post(addr+"/save", "application/json", strings.NewReader(firstBody))
 	resp.Body.Close()
 
 	secondBody := `{"code":"ovr123","content":"updated"}`
-	resp2, _ := http.Post(addr+"/api/save", "application/json", strings.NewReader(secondBody))
+	resp2, _ := http.Post(addr+"/save", "application/json", strings.NewReader(secondBody))
 	resp2.Body.Close()
 
 	resp3, err := http.Get(addr + "/ovr123")
@@ -201,7 +201,7 @@ func TestWebSocketConnectAndEcho(t *testing.T) {
 	defer cleanup()
 
 	saveBody := `{"code":"wsroom","content":"initial"}`
-	resp, _ := http.Post(addr+"/api/save", "application/json", strings.NewReader(saveBody))
+	resp, _ := http.Post(addr+"/save", "application/json", strings.NewReader(saveBody))
 	resp.Body.Close()
 
 	wsURL := "ws" + strings.TrimPrefix(addr, "http") + "/wsroom/ws"
@@ -231,7 +231,7 @@ func TestWebSocketBroadcast(t *testing.T) {
 	defer cleanup()
 
 	saveBody := `{"code":"broadc","content":"initial"}`
-	resp, _ := http.Post(addr+"/api/save", "application/json", strings.NewReader(saveBody))
+	resp, _ := http.Post(addr+"/save", "application/json", strings.NewReader(saveBody))
 	resp.Body.Close()
 
 	wsURL := "ws" + strings.TrimPrefix(addr, "http") + "/broadc/ws"
@@ -288,7 +288,7 @@ func TestWebSocketMessageTooLong(t *testing.T) {
 	defer cleanup()
 
 	saveBody := `{"code":"toolng","content":"initial"}`
-	resp, _ := http.Post(addr+"/api/save", "application/json", strings.NewReader(saveBody))
+	resp, _ := http.Post(addr+"/save", "application/json", strings.NewReader(saveBody))
 	resp.Body.Close()
 
 	wsURL := "ws" + strings.TrimPrefix(addr, "http") + "/toolng/ws"
@@ -317,7 +317,7 @@ func TestPostRateLimit(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		code := "rlt" + strings.Repeat("0", 2) + string(rune('0'+i))
 		body := `{"code":"` + code + `","content":"test"}`
-		resp, err := http.Post(addr+"/api/save", "application/json", strings.NewReader(body))
+		resp, err := http.Post(addr+"/save", "application/json", strings.NewReader(body))
 		if err != nil {
 			t.Fatalf("request %d: unexpected error: %v", i+1, err)
 		}
@@ -328,7 +328,7 @@ func TestPostRateLimit(t *testing.T) {
 	}
 
 	body := `{"code":"rlt006","content":"test"}`
-	resp, err := http.Post(addr+"/api/save", "application/json", strings.NewReader(body))
+	resp, err := http.Post(addr+"/save", "application/json", strings.NewReader(body))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -344,7 +344,7 @@ func TestGetRateLimit(t *testing.T) {
 	defer cleanup()
 
 	saveBody := `{"code":"rlget1","content":"test"}`
-	resp, _ := http.Post(addr+"/api/save", "application/json", strings.NewReader(saveBody))
+	resp, _ := http.Post(addr+"/save", "application/json", strings.NewReader(saveBody))
 	resp.Body.Close()
 
 	for i := 0; i < 100; i++ {
@@ -374,7 +374,7 @@ func TestBodyTooLarge(t *testing.T) {
 	defer cleanup()
 
 	bigBody := strings.Repeat("x", 5000)
-	resp, err := http.Post(addr+"/api/save", "application/json", strings.NewReader(bigBody))
+	resp, err := http.Post(addr+"/save", "application/json", strings.NewReader(bigBody))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -407,7 +407,7 @@ func TestUnknownRoute(t *testing.T) {
 	addr, cleanup := newTestServer(t)
 	defer cleanup()
 
-	resp, err := http.Get(addr + "/api/nonexistent")
+	resp, err := http.Get(addr + "/unknown/route")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

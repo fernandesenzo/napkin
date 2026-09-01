@@ -39,7 +39,7 @@ go run ./cmd/api
 ```
 
 ### save a napkin
-`POST /api/save`
+`POST /save`
 ```json
 {
   "code": "myroom",
@@ -67,8 +67,6 @@ returns the napkin contents as json. for example, `GET /abc123`:
 ```
 
 possible status codes: `200` ok, `400` invalid code, `404` napkin not found, `500` internal server error.
-
-note: the `GET` endpoints have no `/api` prefix — the code goes right after the root, unlike `POST /api/save`.
 
 ### real-time collaboration
 `GET /{code}/ws`
