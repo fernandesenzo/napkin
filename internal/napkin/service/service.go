@@ -13,9 +13,16 @@ type Repository interface {
 }
 
 type Service struct {
-	repo Repository
+	repo   Repository
+	config Config
 }
 
-func New(repo Repository) *Service {
-	return &Service{repo: repo}
+type Config struct {
+	DefaultTTL       time.Duration
+	CodeLength       int
+	MaxContentLength int
+}
+
+func New(repo Repository, config Config) *Service {
+	return &Service{repo: repo, config: config}
 }

@@ -10,7 +10,7 @@ import (
 )
 
 func (s *Service) Get(ctx context.Context, code string) (*napkin.Napkin, error) {
-	if err := napkin.ValidateCode(code); err != nil {
+	if err := napkin.ValidateCode(code, s.config.CodeLength); err != nil {
 		return nil, err
 	}
 	npk, err := s.repo.Get(ctx, code)

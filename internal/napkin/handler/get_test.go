@@ -63,7 +63,7 @@ func TestGet(t *testing.T) {
 			svc := &mockService{
 				getFn: tt.getFn,
 			}
-			h := New(svc, nil)
+			h := New(svc, nil, Config{CodeLength: 6, MaxContentLength: 400})
 
 			req := httptest.NewRequest(http.MethodGet, "/napkin/"+tt.code, nil)
 			req.SetPathValue("code", tt.code)

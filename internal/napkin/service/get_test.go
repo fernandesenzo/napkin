@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/fernandesenzo/napkin/internal/napkin"
 	"github.com/fernandesenzo/napkin/internal/napkin/repository"
@@ -54,7 +55,7 @@ func TestGet(t *testing.T) {
 				getResult: tt.repoNapkin,
 				getErr:    tt.repoErr,
 			}
-			svc := New(mock)
+			svc := New(mock, Config{CodeLength: 6, MaxContentLength: 400, DefaultTTL: time.Hour * 24})
 
 			got, err := svc.Get(context.Background(), tt.code)
 

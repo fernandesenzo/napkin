@@ -3,7 +3,6 @@ package napkin
 import (
 	"errors"
 	"regexp"
-	"time"
 )
 
 type Napkin struct {
@@ -11,14 +10,10 @@ type Napkin struct {
 	Text string
 }
 
-const CodeLength = 6
-const MaxContentLength = 200
-const DefaultTTL = time.Hour * 24
-
 var codePattern = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
 
-func ValidateCode(code string) error {
-	if len(code) != CodeLength {
+func ValidateCode(code string, codeLength int) error {
+	if len(code) != codeLength {
 		return ErrInvalidCode
 	}
 	if !codePattern.MatchString(code) {
@@ -26,8 +21,8 @@ func ValidateCode(code string) error {
 	}
 	return nil
 }
-func ValidateContent(content string) error {
-	if len(content) > MaxContentLength {
+func ValidateContent(content string, maxContentLength int) error {
+	if len(content) > maxContentLength {
 		return ErrContentTooLong
 	}
 	return nil

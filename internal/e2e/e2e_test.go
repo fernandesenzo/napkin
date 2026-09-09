@@ -25,9 +25,17 @@ func newTestServer(t *testing.T) (string, func()) {
 	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 
 	repo := repository.NewRedisRepository(client)
-	svc := service.New(repo)
+	svc := service.New(repo, service.Config{
+		DefaultTTL:       24 * time.Hour,
+		CodeLength:       6,
+		MaxContentLength: 400,
+	})
 	mgr := manager.New(svc)
-	h := handler.New(svc, mgr)
+	h := handler.New(svc, mgr, handler.Config{
+		CodeLength:       6,
+		MaxContentLength: 400,
+		AllowedOrigins:   "*",
+	})
 
 	rlGet := middleware.RateLimit(client, "napkin:rl:get:", 100, time.Minute)
 	rlPost := middleware.RateLimit(client, "napkin:rl:post:", 5, time.Minute)
@@ -143,7 +151,7 @@ func TestSaveContentTooLong(t *testing.T) {
 	addr, cleanup := newTestServer(t)
 	defer cleanup()
 
-	longContent := strings.Repeat("a", 201)
+	longContent := strings.Repeat("a", 401)
 	body := `{"code":"abc123","content":"` + longContent + `"}`
 	resp, err := http.Post(addr+"/save", "application/json", strings.NewReader(body))
 	if err != nil {
@@ -298,7 +306,7 @@ func TestWebSocketMessageTooLong(t *testing.T) {
 	}
 	defer conn.Close()
 
-	longMsg := strings.Repeat("x", 201)
+	longMsg := strings.Repeat("x", 401)
 	if writeErr := conn.WriteMessage(websocket.TextMessage, []byte(longMsg)); writeErr != nil {
 		t.Fatalf("failed to write: %v", writeErr)
 	}

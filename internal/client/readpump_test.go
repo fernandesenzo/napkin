@@ -11,7 +11,7 @@ func TestReadPump_ValidMessageIsBroadcast(t *testing.T) {
 	h := newStubHub()
 	serverConn, clientConn := dialTestServer(t, nil)
 
-	c := NewClient(h, serverConn)
+	c := NewClient(h, serverConn, Config{MaxContentLength: 400})
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
@@ -41,15 +41,15 @@ func TestReadPump_ContentTooLongIsDropped(t *testing.T) {
 	h := newStubHub()
 	serverConn, clientConn := dialTestServer(t, nil)
 
-	c := NewClient(h, serverConn)
+	c := NewClient(h, serverConn, Config{MaxContentLength: 400})
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
 		c.ReadPump()
 	}()
 
-	// Send a message that exceeds MaxContentLength (200 bytes).
-	tooLong := strings.Repeat("x", 201)
+	// Send a message that exceeds MaxContentLength (400 bytes).
+	tooLong := strings.Repeat("x", 401)
 	if err := clientConn.WriteMessage(websocket.TextMessage, []byte(tooLong)); err != nil {
 		t.Fatalf("failed to write message: %v", err)
 	}
@@ -74,7 +74,7 @@ func TestReadPump_BinaryMessageIsDropped(t *testing.T) {
 	h := newStubHub()
 	serverConn, clientConn := dialTestServer(t, nil)
 
-	c := NewClient(h, serverConn)
+	c := NewClient(h, serverConn, Config{MaxContentLength: 400})
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
@@ -104,7 +104,7 @@ func TestReadPump_UnregistersOnClose(t *testing.T) {
 	h := newStubHub()
 	serverConn, clientConn := dialTestServer(t, nil)
 
-	c := NewClient(h, serverConn)
+	c := NewClient(h, serverConn, Config{MaxContentLength: 400})
 	done := make(chan struct{})
 	go func() {
 		defer close(done)

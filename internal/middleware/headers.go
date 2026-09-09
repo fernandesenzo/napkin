@@ -2,17 +2,11 @@ package middleware
 
 import (
 	"net/http"
-	"strings"
+
+	"github.com/fernandesenzo/napkin/internal/origin"
 )
 
 func ApplyHeaders(allowedOrigins string) func(http.Handler) http.Handler {
-	var origins []string
-	if allowedOrigins != "" && allowedOrigins != "*" {
-		for _, o := range strings.Split(allowedOrigins, ",") {
-			origins = append(origins, strings.TrimSpace(o))
-		}
-	}
-
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -21,14 +15,11 @@ func ApplyHeaders(allowedOrigins string) func(http.Handler) http.Handler {
 
 			if allowedOrigins == "*" {
 				w.Header().Set("Access-Control-Allow-Origin", "*")
-			} else if len(origins) > 0 {
-				origin := r.Header.Get("Origin")
-				w.Header().Add("Vary", "Origin")
-				for _, o := range origins {
-					if o == origin {
-						w.Header().Set("Access-Control-Allow-Origin", origin)
-						break
-					}
+			} else if allowedOrigins != "" {
+				reqOrigin := r.Header.Get("Origin")
+				if origin.IsAllowed(reqOrigin, allowedOrigins) {
+					w.Header().Set("Access-Control-Allow-Origin", reqOrigin)
+					w.Header().Add("Vary", "Origin")
 				}
 			}
 

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/fernandesenzo/napkin/internal/napkin"
 )
@@ -45,7 +46,7 @@ func TestSave(t *testing.T) {
 			mock := &mockRepository{
 				saveErr: tt.repoErr,
 			}
-			svc := New(mock)
+			svc := New(mock, Config{CodeLength: 6, MaxContentLength: 400, DefaultTTL: time.Hour * 24})
 
 			got, err := svc.Save(context.Background(), tt.code, tt.content)
 

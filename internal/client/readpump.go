@@ -16,7 +16,7 @@ func (c *Client) ReadPump() {
 		}
 	}()
 
-	c.conn.SetReadLimit(maxMessageSize)
+	c.conn.SetReadLimit(int64(c.maxMessageSize()))
 
 	if err := c.conn.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
 		slog.Debug("client.ReadPump: failed to set initial read deadline", "err", err)
@@ -46,7 +46,7 @@ func (c *Client) ReadPump() {
 
 		message := string(messageBytes)
 
-		if err := napkin.ValidateContent(message); err != nil {
+		if err := napkin.ValidateContent(message, c.maxContentLength); err != nil {
 			slog.Warn("client.ReadPump: invalid content size", "err", err, "room", c.hub.GetCode())
 			continue
 		}

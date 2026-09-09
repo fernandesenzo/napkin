@@ -80,7 +80,7 @@ func TestNewClient(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			h := &stubHub{code: tt.code}
-			c := NewClient(h, nil)
+			c := NewClient(h, nil, Config{MaxContentLength: 400})
 			if c == nil {
 				t.Fatal("expected non-nil client")
 			}

@@ -65,7 +65,7 @@ func TestSave(t *testing.T) {
 		{
 			name:        "content too long",
 			contentType: "application/json",
-			body:        `{"code":"abcdef","content":"` + strings.Repeat("a", 201) + `"}`,
+			body:        `{"code":"abcdef","content":"` + strings.Repeat("a", 401) + `"}`,
 			saveFn: func(ctx context.Context, code string, content string) (*napkin.Napkin, error) {
 				return nil, napkin.ErrContentTooLong
 			},
@@ -89,7 +89,7 @@ func TestSave(t *testing.T) {
 			svc := &mockService{
 				saveFn: tt.saveFn,
 			}
-			h := New(svc, nil)
+			h := New(svc, nil, Config{CodeLength: 6, MaxContentLength: 400})
 
 			req := httptest.NewRequest(http.MethodPost, "/napkin", strings.NewReader(tt.body))
 			if tt.contentType != "" {

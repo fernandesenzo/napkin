@@ -10,7 +10,7 @@ func TestWritePump_SendsTextMessage(t *testing.T) {
 	h := newStubHub()
 	serverConn, clientConn := dialTestServer(t, nil)
 
-	c := NewClient(h, serverConn)
+	c := NewClient(h, serverConn, Config{MaxContentLength: 400})
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
@@ -36,7 +36,7 @@ func TestWritePump_ClosedChannelSendsCloseFrame(t *testing.T) {
 	h := newStubHub()
 	serverConn, clientConn := dialTestServer(t, nil)
 
-	c := NewClient(h, serverConn)
+	c := NewClient(h, serverConn, Config{MaxContentLength: 400})
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
@@ -72,7 +72,7 @@ func TestWritePump_MultipleMessages(t *testing.T) {
 			h := newStubHub()
 			serverConn, clientConn := dialTestServer(t, nil)
 
-			c := NewClient(h, serverConn)
+			c := NewClient(h, serverConn, Config{MaxContentLength: 400})
 			done := make(chan struct{})
 			go func() {
 				defer close(done)
