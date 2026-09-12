@@ -1,9 +1,11 @@
 package middleware_test
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,6 +13,52 @@ import (
 
 	"github.com/fernandesenzo/napkin/internal/middleware"
 )
+
+type hijackRecorder struct {
+	*httptest.ResponseRecorder
+	hijacked bool
+	flushed  bool
+}
+
+func (h *hijackRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	h.hijacked = true
+	return nil, nil, nil
+}
+
+func (h *hijackRecorder) Flush() {
+	h.flushed = true
+}
+
+func TestAccessLogProxySupportsHijackAndFlush(t *testing.T) {
+	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if hj, ok := w.(http.Hijacker); ok {
+			if _, _, err := hj.Hijack(); err != nil {
+				t.Errorf("Hijack from inner handler failed: %v", err)
+			}
+		} else {
+			t.Error("response writer passed to inner handler does not implement http.Hijacker")
+		}
+
+		if fl, ok := w.(http.Flusher); ok {
+			fl.Flush()
+		} else {
+			t.Error("response writer passed to inner handler does not implement http.Flusher")
+		}
+	})
+
+	rec := &hijackRecorder{ResponseRecorder: httptest.NewRecorder()}
+	m := middleware.AccessLog(inner)
+	req := httptest.NewRequest("GET", "/ws", nil)
+
+	m.ServeHTTP(rec, req)
+
+	if !rec.hijacked {
+		t.Error("expected the underlying writer's Hijack to have been called")
+	}
+	if !rec.flushed {
+		t.Error("expected the underlying writer's Flush to have been called")
+	}
+}
 
 func TestAccessLog(t *testing.T) {
 	tests := []struct {
