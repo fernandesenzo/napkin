@@ -12,11 +12,12 @@ import (
 	"time"
 
 	"github.com/fernandesenzo/napkin/internal/config"
+	healthHandler "github.com/fernandesenzo/napkin/internal/health/handler"
 	"github.com/fernandesenzo/napkin/internal/infra"
 	"github.com/fernandesenzo/napkin/internal/logger"
 	"github.com/fernandesenzo/napkin/internal/manager"
 	"github.com/fernandesenzo/napkin/internal/middleware"
-	"github.com/fernandesenzo/napkin/internal/napkin/handler"
+	napkinHandler "github.com/fernandesenzo/napkin/internal/napkin/handler"
 	"github.com/fernandesenzo/napkin/internal/napkin/repository"
 	"github.com/fernandesenzo/napkin/internal/napkin/service"
 	"github.com/joho/godotenv"
@@ -60,11 +61,12 @@ func run() error {
 		MaxContentLength: cfg.MaxContentLength,
 	})
 	manager := manager.New(svc)
-	h := handler.New(svc, manager, handler.Config{
+	h := napkinHandler.New(svc, manager, napkinHandler.Config{
 		MaxContentLength: cfg.MaxContentLength,
 		CodeLength:       cfg.CodeLength,
 		AllowedOrigins:   cfg.AllowedOrigins,
 	})
+	healthHandler := healthHandler.New(redisClient)
 
 	rlGet := middleware.RateLimit(redisClient, "napkin:rl:get:", cfg.RateLimitGetMax, cfg.RateLimitWindow)
 	rlPost := middleware.RateLimit(redisClient, "napkin:rl:post:", cfg.RateLimitPostMax, cfg.RateLimitWindow)
@@ -73,6 +75,7 @@ func run() error {
 	mux.Handle("POST /save", middleware.BodyLimit(4096)(rlPost(http.HandlerFunc(h.Save))))
 	mux.Handle("GET /{code}", rlGet(http.HandlerFunc(h.Get)))
 	mux.Handle("GET /{code}/ws", rlGet(http.HandlerFunc(h.WebSocket)))
+	mux.HandleFunc("GET /health", healthHandler.Get)
 
 	var handlerStack http.Handler = mux
 	handlerStack = middleware.AccessLog(handlerStack)

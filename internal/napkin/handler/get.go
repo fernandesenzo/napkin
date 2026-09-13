@@ -22,6 +22,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	resp.Code = npk.Code
 	resp.Content = npk.Text
 
+	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		slog.ErrorContext(r.Context(), "handler.Get: failed to encode response", "err", err.Error())
 	}

@@ -77,6 +77,10 @@ func TestGet(t *testing.T) {
 
 			body := strings.TrimSpace(rr.Body.String())
 			if tt.expectedStatus == http.StatusOK {
+				if got := rr.Header().Get("Content-Type"); got != "application/json" {
+					t.Errorf("expected Content-Type application/json, got %q", got)
+				}
+
 				var got getNapkinResponse
 				if err := json.Unmarshal(rr.Body.Bytes(), &got); err != nil {
 					t.Fatalf("failed to unmarshal response: %v", err)
