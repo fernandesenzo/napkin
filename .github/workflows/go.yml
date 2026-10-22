@@ -11,23 +11,146 @@ permissions:
 
 jobs:
 
-  build:
-    runs-on: ubuntu-latest
+  ci:
+    runs-on: ubuntu-26.04
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.2'
 
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.26'
+      - name: Run golangci-lint
+        run: |
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
+          $(go env GOPATH)/bin/golangci-lint run
 
-    - name: Run golangci-lint
-      run: |
-        go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-        $(go env GOPATH)/bin/golangci-lint run
+      - name: Vet
+        run: go vet ./...
 
-    - name: Build
-      run: go build -v ./...
+      - name: Build
+        run: go build -v ./...
 
-    - name: Test
-      run: go test -race -count=1 -shuffle=on ./...
+      - name: Test
+        run: go test -race -count=1 -shuffle=on ./...
+
+  image:
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    runs-on: ubuntu-26.04
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{github.actor}}
+          password: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:sha-${{ github.sha }}
+
+  deploy:
+    needs: image
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - name: Get deploy script
+        uses: actions/checkout@v7
+        with:
+          repository: fernandesenzo/infra
+          ref: main
+          path: infra
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ vars.SSH_KNOWN_HOSTS }}
+        run: |
+          : "${SSH_PRIVATE_KEY:?SSH_PRIVATE_KEY is required}"
+          : "${SSH_KNOWN_HOSTS:?SSH_KNOWN_HOSTS is required}"
+
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+      - name: Update Napkin application environment
+        env:
+          SSH_TARGET: ${{ vars.SSH_TARGET }}
+          REMOTE_INFRA_DIR: ${{ vars.REMOTE_INFRA_DIR }}
+          APP_ENV: ${{ vars.APP_ENV }}
+          SERVER_PORT: ${{ vars.SERVER_PORT }}
+          ALLOWED_ORIGINS: ${{ vars.ALLOWED_ORIGINS }}
+          RATE_LIMIT_GET_MAX: ${{ vars.RATE_LIMIT_GET_MAX }}
+          RATE_LIMIT_POST_MAX: ${{ vars.RATE_LIMIT_POST_MAX }}
+          RATE_LIMIT_WINDOW_SEC: ${{ vars.RATE_LIMIT_WINDOW_SEC }}
+          CODE_LENGTH: ${{ vars.CODE_LENGTH }}
+          MAX_CONTENT_LENGTH: ${{ vars.MAX_CONTENT_LENGTH }}
+          DEFAULT_TTL: ${{ vars.DEFAULT_TTL }}
+        run: |
+          set -Eeuo pipefail
+
+          : "${SSH_TARGET:?SSH_TARGET is required}"
+          : "${REMOTE_INFRA_DIR:?REMOTE_INFRA_DIR is required}"
+          : "${APP_ENV:?APP_ENV is required}"
+          : "${SERVER_PORT:?SERVER_PORT is required}"
+          : "${ALLOWED_ORIGINS:?ALLOWED_ORIGINS is required}"
+          : "${RATE_LIMIT_GET_MAX:?RATE_LIMIT_GET_MAX is required}"
+          : "${RATE_LIMIT_POST_MAX:?RATE_LIMIT_POST_MAX is required}"
+          : "${RATE_LIMIT_WINDOW_SEC:?RATE_LIMIT_WINDOW_SEC is required}"
+          : "${CODE_LENGTH?CODE_LENGTH mapping must be present}"
+          : "${MAX_CONTENT_LENGTH?MAX_CONTENT_LENGTH mapping must be present}"
+          : "${DEFAULT_TTL?DEFAULT_TTL mapping must be present}"
+
+          [[ "$SSH_TARGET" =~ ^[A-Za-z0-9._@-]+$ ]] \
+            || { printf 'SSH_TARGET contains unsupported characters\n' >&2; exit 1; }
+          [[ "$REMOTE_INFRA_DIR" =~ ^/[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*$ ]] \
+            || { printf 'REMOTE_INFRA_DIR must be a specific absolute path\n' >&2; exit 1; }
+          [[ ! "$REMOTE_INFRA_DIR" =~ (^|/)\.\.?(/|$) ]] \
+            || { printf 'REMOTE_INFRA_DIR cannot contain . or .. path components\n' >&2; exit 1; }
+
+          ssh_options=(-o BatchMode=yes -o StrictHostKeyChecking=yes)
+          remote_script=''
+
+          cleanup() {
+            if [[ -n "$remote_script" ]]; then
+              ssh "${ssh_options[@]}" "$SSH_TARGET" "rm -f -- '$remote_script'" >/dev/null 2>&1 || true
+            fi
+          }
+          trap cleanup EXIT
+
+          remote_script=$(ssh "${ssh_options[@]}" "$SSH_TARGET" 'mktemp --tmpdir=/tmp napkin-env.XXXXXXXX')
+          [[ "$remote_script" =~ ^/tmp/napkin-env\.[A-Za-z0-9]{8}$ ]] \
+            || { printf 'Could not create a safe temporary script path on the VPS\n' >&2; exit 1; }
+
+          scp -q "${ssh_options[@]}" infra/deploy/napkin-env.sh "$SSH_TARGET:$remote_script"
+          ssh "${ssh_options[@]}" "$SSH_TARGET" "chmod 600 -- '$remote_script'"
+
+          printf 'APP_ENV=%s\nSERVER_PORT=%s\nALLOWED_ORIGINS=%s\nRATE_LIMIT_GET_MAX=%s\nRATE_LIMIT_POST_MAX=%s\nRATE_LIMIT_WINDOW_SEC=%s\nCODE_LENGTH=%s\nMAX_CONTENT_LENGTH=%s\nDEFAULT_TTL=%s\n' \
+            "$APP_ENV" "$SERVER_PORT" "$ALLOWED_ORIGINS" \
+            "$RATE_LIMIT_GET_MAX" "$RATE_LIMIT_POST_MAX" "$RATE_LIMIT_WINDOW_SEC" \
+            "$CODE_LENGTH" "$MAX_CONTENT_LENGTH" "$DEFAULT_TTL" |
+            ssh "${ssh_options[@]}" "$SSH_TARGET" \
+              "bash '$remote_script' '$REMOTE_INFRA_DIR'"
+      - name: Deploy Napkin
+        env:
+          SSH_TARGET: ${{ vars.SSH_TARGET }}
+          REMOTE_INFRA_DIR: ${{ vars.REMOTE_INFRA_DIR }}
+        run: bash infra/deploy/napkin.sh "ghcr.io/${{ github.repository }}:sha-${{ github.sha }}"
